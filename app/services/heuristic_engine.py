@@ -6,6 +6,7 @@ import asyncio
 from openai import AsyncOpenAI
 
 from app.core.constants import NIELSEN_HEURISTICS, HeuristicId, SeverityLevel
+from app.core.config import settings
 from app.services.omniparser_client import UIElementDetectionResult, UIElement
 from app.services.rag_knowledge_base import RAGKnowledgeBase
 
@@ -98,7 +99,7 @@ class HeuristicEvaluationEngine:
 
     async def initialize(self):
         self.logger.info("Initializing Heuristic Evaluation Engine...")
-        self.llm_client = AsyncOpenAI()
+        self.llm_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.rag_kb = RAGKnowledgeBase()
         await self.rag_kb.initialize()
         self.initialized = True

@@ -1,6 +1,6 @@
 import logging
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from typing import Optional
+from fastapi import APIRouter, HTTPException, UploadFile, File, Body
+from typing import Optional, List
 import json
 
 from app.services.heuristic_engine import HeuristicEvaluationEngine
@@ -44,12 +44,14 @@ async def evaluate_heuristics(
 @router.post("/evaluate-legacy/{heuristic_id}")
 async def evaluate_legacy_format(
     heuristic_id: str,
-    elements: list
+    elements: List[dict] = Body(...)
 ):
     try:
         from app.core.constants import HeuristicId
 
-        if heuristic_id.upper() not in [h.value for h in HeuristicId]:
+        # Normalize heuristic_id to uppercase
+        normalized_id = heuristic_id.upper()
+        if normalized_id not in [h.value for h in HeuristicId]:
             raise HTTPException(status_code=400, detail=f"Invalid heuristic ID: {heuristic_id}")
 
         evaluation_engine = HeuristicEvaluationEngine()
@@ -58,8 +60,8 @@ async def evaluate_legacy_format(
         from app.services.omniparser_client import UIElement
         ui_elements = [UIElement.from_dict(e) for e in elements]
 
-        from app.core.constants import HeuristicId as HId
-        h_id = HeuristicId(f"H{heuristic_id[-1]}")
+        # Find the matching HeuristicId enum by value
+        h_id = next(h for h in HeuristicId if h.value == normalized_id)
         score = await evaluation_engine.evaluate_heuristic(h_id, ui_elements, None)
 
         return {
