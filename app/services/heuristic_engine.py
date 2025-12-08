@@ -147,6 +147,8 @@ class HeuristicEvaluationEngine:
             violations = await self._evaluate_h2_match_real_world(elements, detection_result)
         elif heuristic_id == HeuristicId.H3_USER_CONTROL_AND_FREEDOM:
             violations = await self._evaluate_h3_user_control(elements, detection_result)
+        elif heuristic_id == HeuristicId.H4_CONSISTENCY_AND_STANDARDS:
+            violations = await self._evaluate_h4_consistency(elements, detection_result)
 
         score, explanation = self.calculate_score(violations, heuristic_id.value)
 
@@ -283,6 +285,126 @@ class HeuristicEvaluationEngine:
 
         return violations
 
+    async def _evaluate_h4_consistency(
+        self,
+        elements: List[UIElement],
+        detection_result: UIElementDetectionResult
+    ) -> List[HeuristicViolation]:
+        """Evaluate H4: Consistency and Standards.
+        
+        Checks for:
+        - Consistent button dimensions across similar components
+        - Consistent typography (font sizes/styles) for similar elements
+        - Consistent color usage for same purposes
+        - Consistent terminology across the interface
+        """
+        violations = []
+        
+        # H4.1: Check button dimension consistency
+        buttons = [e for e in elements if e.element_type == "button"]
+        if len(buttons) >= 2:
+            # Group buttons and check dimension consistency
+            button_dimensions = []
+            for btn in buttons:
+                width = btn.attributes.get("width")
+                height = btn.attributes.get("height")
+                if width and height:
+                    button_dimensions.append((btn.text, width, height))
+            
+            if len(button_dimensions) >= 2:
+                # Check if button heights are consistent (allow 10% variance)
+                heights = [d[2] for d in button_dimensions]
+                avg_height = sum(heights) / len(heights)
+                inconsistent_buttons = [
+                    d[0] for d in button_dimensions 
+                    if abs(d[2] - avg_height) > avg_height * 0.1
+                ]
+                
+                if inconsistent_buttons:
+                    violations.append(HeuristicViolation(
+                        heuristic_id="H4",
+                        criterion_id="H4.1",
+                        severity=SeverityLevel.MINOR,
+                        description=f"Inconsistent button heights detected",
+                        affected_elements=inconsistent_buttons,
+                        recommendation="Standardize button heights for visual consistency"
+                    ))
+        
+        # H4.2: Check typography consistency for similar elements
+        headings = [e for e in elements if e.element_type == "heading"]
+        if len(headings) >= 2:
+            font_sizes = []
+            for heading in headings:
+                font_size = heading.attributes.get("font_size")
+                if font_size:
+                    font_sizes.append((heading.text, font_size))
+            
+            if len(font_sizes) >= 2:
+                # Check for inconsistent heading sizes at same level
+                size_set = set(fs[1] for fs in font_sizes)
+                if len(size_set) > 2:  # More than 2 different heading sizes may indicate inconsistency
+                    violations.append(HeuristicViolation(
+                        heuristic_id="H4",
+                        criterion_id="H4.2",
+                        severity=SeverityLevel.MINOR,
+                        description="Multiple heading font sizes detected, may indicate inconsistent typography",
+                        affected_elements=[fs[0] for fs in font_sizes],
+                        recommendation="Establish and follow a consistent typography hierarchy"
+                    ))
+        
+        # H4.3: Check color consistency for buttons
+        button_colors = []
+        for btn in buttons:
+            bg_color = btn.attributes.get("background_color") or btn.attributes.get("bg_color")
+            if bg_color:
+                button_colors.append((btn.text, bg_color))
+        
+        if len(button_colors) >= 2:
+            # Check if similar action buttons have different colors
+            primary_keywords = ["submit", "save", "confirm", "ok", "continue", "next"]
+            primary_buttons = [
+                bc for bc in button_colors 
+                if any(kw in bc[0].lower() for kw in primary_keywords)
+            ]
+            
+            if len(primary_buttons) >= 2:
+                unique_colors = set(pb[1] for pb in primary_buttons)
+                if len(unique_colors) > 1:
+                    violations.append(HeuristicViolation(
+                        heuristic_id="H4",
+                        criterion_id="H4.3",
+                        severity=SeverityLevel.MAJOR,
+                        description="Primary action buttons have inconsistent colors",
+                        affected_elements=[pb[0] for pb in primary_buttons],
+                        recommendation="Use consistent colors for primary action buttons across the interface"
+                    ))
+        
+        # H4.4: Check terminology consistency
+        button_texts = [btn.text.lower() for btn in buttons]
+        
+        # Define conflicting term pairs
+        conflicting_terms = [
+            (["delete", "remove"], "delete/remove"),
+            (["save", "submit"], "save/submit"),
+            (["cancel", "close", "exit"], "cancel/close/exit"),
+            (["edit", "modify", "update"], "edit/modify/update"),
+            (["add", "create", "new"], "add/create/new")
+        ]
+        
+        for terms, term_group in conflicting_terms:
+            found_terms = [t for t in terms if any(t in bt for bt in button_texts)]
+            if len(found_terms) > 1:
+                violations.append(HeuristicViolation(
+                    heuristic_id="H4",
+                    criterion_id="H4.4",
+                    severity=SeverityLevel.MAJOR,
+                    description=f"Inconsistent terminology: both {' and '.join(found_terms)} used for similar actions",
+                    affected_elements=found_terms,
+                    recommendation=f"Choose one term from {term_group} and use it consistently"
+                ))
+        
+        return violations
+
     async def evaluate_interface(
         self,
         detection_result: UIElementDetectionResult
@@ -295,7 +417,8 @@ class HeuristicEvaluationEngine:
         heuristic_ids = [
             HeuristicId.H1_VISIBILITY_OF_SYSTEM_STATUS,
             HeuristicId.H2_MATCH_BETWEEN_SYSTEM_AND_REAL_WORLD,
-            HeuristicId.H3_USER_CONTROL_AND_FREEDOM
+            HeuristicId.H3_USER_CONTROL_AND_FREEDOM,
+            HeuristicId.H4_CONSISTENCY_AND_STANDARDS
         ]
 
         heuristic_scores = []

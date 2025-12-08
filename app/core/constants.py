@@ -90,5 +90,77 @@ NIELSEN_HEURISTICS = {
                 "severity_weights": {"critical": 10, "major": 6, "minor": 2, "cosmetic": 1}
             }
         ]
+    },
+    HeuristicId.H4_CONSISTENCY_AND_STANDARDS: {
+        "name": "Consistency and Standards",
+        "description": "Users should not have to wonder whether different words, situations, or actions mean the same thing. Follow platform and industry conventions.",
+        "measurable_criteria": [
+            {
+                "id": "H4.1",
+                "description": "Consistent button dimensions",
+                "evaluation": "Buttons of the same type (primary, secondary) should have uniform width/height",
+                "severity_weights": {"critical": 6, "major": 4, "minor": 2, "cosmetic": 1}
+            },
+            {
+                "id": "H4.2",
+                "description": "Consistent typography",
+                "evaluation": "Similar elements (headings, body text, labels) use consistent font sizes and styles",
+                "severity_weights": {"critical": 6, "major": 4, "minor": 2, "cosmetic": 1}
+            },
+            {
+                "id": "H4.3",
+                "description": "Consistent color usage",
+                "evaluation": "Same colors used for same purposes (e.g., primary action buttons same color)",
+                "severity_weights": {"critical": 8, "major": 5, "minor": 2, "cosmetic": 1}
+            },
+            {
+                "id": "H4.4",
+                "description": "Consistent terminology",
+                "evaluation": "Same terms used for same actions across the interface (not mix of Save/Submit, Delete/Remove)",
+                "severity_weights": {"critical": 8, "major": 5, "minor": 3, "cosmetic": 1}
+            },
+            {
+                "id": "H4.5",
+                "description": "Platform conventions followed",
+                "evaluation": "UI follows established platform patterns (navigation placement, icon usage)",
+                "severity_weights": {"critical": 10, "major": 6, "minor": 3, "cosmetic": 1}
+            }
+        ]
+    },
+    HeuristicId.H5_ERROR_PREVENTION: {
+        "name": "Error Prevention",
+        "description": "Even better than good error messages is a careful design which prevents a problem from occurring in the first place.",
+        "measurable_criteria": [
+            {
+                "id": "H5.1",
+                "description": "Input validation before submission",
+                "evaluation": "Form fields validate input format before allowing submission (email, phone, required fields)",
+                "severity_weights": {"critical": 10, "major": 6, "minor": 3, "cosmetic": 1}
+            },
+            {
+                "id": "H5.2",
+                "description": "Constraints on input fields",
+                "evaluation": "Input fields have appropriate constraints (max length, input type, allowed characters)",
+                "severity_weights": {"critical": 8, "major": 5, "minor": 2, "cosmetic": 1}
+            },
+            {
+                "id": "H5.3",
+                "description": "Confirmation for high-risk actions",
+                "evaluation": "Irreversible or significant actions require explicit confirmation",
+                "severity_weights": {"critical": 10, "major": 7, "minor": 3, "cosmetic": 1}
+            },
+            {
+                "id": "H5.4",
+                "description": "Default values and suggestions",
+                "evaluation": "Fields provide sensible defaults or suggestions to reduce user errors",
+                "severity_weights": {"critical": 4, "major": 3, "minor": 2, "cosmetic": 1}
+            },
+            {
+                "id": "H5.5",
+                "description": "Disable invalid options",
+                "evaluation": "Options that are not available are disabled rather than hidden, preventing confusion",
+                "severity_weights": {"critical": 6, "major": 4, "minor": 2, "cosmetic": 1}
+            }
+        ]
     }
 }
