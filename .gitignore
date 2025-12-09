@@ -175,6 +175,7 @@ logs/
 data/
 *.index
 *.db
+secrets/
 
 # Test files
 *test*

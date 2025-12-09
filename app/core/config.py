@@ -6,6 +6,7 @@ import os
 class Settings(BaseSettings):
     OPENAI_API_KEY: str = Field(default="", env="OPENAI_API_KEY")
     OPENAI_MODEL: str = Field(default="gpt-4", env="OPENAI_MODEL")
+    OPENAI_BASE_URL: str = Field(default="https://api.openai.com/v1", env="OPENAI_BASE_URL")
     FIREBASE_PROJECT_ID: str = Field(default="", env="FIREBASE_PROJECT_ID")
     FIREBASE_SERVICE_ACCOUNT_KEY: str = Field(default="", env="FIREBASE_SERVICE_ACCOUNT_KEY")
     FAISS_INDEX_PATH: str = Field(default="./data/knowledge_base.index", env="FAISS_INDEX_PATH")

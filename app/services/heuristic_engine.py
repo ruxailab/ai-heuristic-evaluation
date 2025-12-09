@@ -46,13 +46,15 @@ class HeuristicScore:
         score: int,
         max_score: int = 100,
         violations: Optional[List[HeuristicViolation]] = None,
-        explanation: Optional[str] = None
+        explanation: Optional[str] = None,
+        llm_explanation: Optional[str] = None
     ):
         self.heuristic_id = heuristic_id
         self.score = score
         self.max_score = max_score
         self.violations = violations or []
         self.explanation = explanation
+        self.llm_explanation = llm_explanation
 
     def to_dict(self):
         return {
@@ -61,7 +63,8 @@ class HeuristicScore:
             "max_score": self.max_score,
             "percentage": round((self.score / self.max_score) * 100, 2),
             "violations": [v.to_dict() for v in self.violations],
-            "explanation": self.explanation
+            "explanation": self.explanation,
+            "llm_explanation": self.llm_explanation
         }
 
 class HeuristicEvaluationResult:
@@ -119,7 +122,10 @@ class HeuristicEvaluationEngine:
 
     async def initialize(self):
         self.logger.info("Initializing Heuristic Evaluation Engine...")
-        self.llm_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self.llm_client = AsyncOpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL
+        )
         self.rag_kb = RAGKnowledgeBase()
         await self.rag_kb.initialize()
         self.initialized = True
@@ -333,11 +339,19 @@ Violations:"""
 
         score, explanation = self.calculate_score(violations, heuristic_id.value)
 
+        llm_explanation = await self._llm_explain_heuristic(
+            heuristic_id,
+            detection_result,
+            score,
+            violations
+        )
+
         return HeuristicScore(
             heuristic_id=heuristic_id.value,
             score=score,
             violations=violations,
-            explanation=explanation
+            explanation=explanation,
+            llm_explanation=llm_explanation
         )
 
     async def _evaluate_h4_consistency_legacy(
@@ -499,3 +513,63 @@ Violations:"""
         )
 
         return result
+
+    async def _llm_explain_heuristic(
+        self,
+        heuristic_id: HeuristicId,
+        detection_result: UIElementDetectionResult,
+        score: int,
+        violations: List[HeuristicViolation]
+    ) -> Optional[str]:
+        if not self.llm_client:
+            return None
+
+        try:
+            elements_brief = [
+                {
+                    "type": e.element_type,
+                    "text": e.text,
+                    "interactive": e.interactive,
+                    "attributes": list(e.attributes.keys())
+                }
+                for e in detection_result.elements[:20]
+            ]
+
+            prompt = (
+                "You are a UX heuristic expert. Summarize the key usability issues for "
+                f"{heuristic_id.value} using the detected UI elements and violations. "
+                "Keep it concise (2-3 sentences) and actionable."
+            )
+
+            messages = [
+                {
+                    "role": "system",
+                    "content": "Provide clear, concise UX heuristic explanations."
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Heuristic: {heuristic_id.value}\n"
+                        f"Score: {score}/100\n"
+                        f"Violations: {[v.description for v in violations]}\n"
+                        f"Elements: {elements_brief}"
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+
+            response = await self.llm_client.chat.completions.create(
+                model=settings.OPENAI_MODEL,
+                messages=messages,
+                temperature=0.2,
+                max_tokens=200
+            )
+
+            return response.choices[0].message.content.strip() if response.choices else None
+
+        except Exception as exc:
+            self.logger.warning(f"LLM explanation failed for {heuristic_id.value}: {exc}")
+            return None
