@@ -164,42 +164,34 @@ class HeuristicEvaluationEngine:
         elements: List[UIElement],
         detection_result: UIElementDetectionResult
     ) -> List[HeuristicViolation]:
+        """Evaluate H1: Visibility of System Status.
+        
+        Note: State detection (hover, active, loading) requires vision analysis
+        beyond what bbox provides. These checks are placeholder for future
+        integration with vision models.
+        """
         violations = []
 
         buttons = [e for e in elements if e.element_type == "button"]
         inputs = [e for e in elements if e.element_type == "input"]
 
-        for button in buttons:
-            if not button.attributes.get("hover_state") and not button.attributes.get("active_state"):
-                violations.append(HeuristicViolation(
-                    heuristic_id="H1",
-                    criterion_id="H1.2",
-                    severity=SeverityLevel.MAJOR,
-                    description=f"Button '{button.text}' lacks visible hover or active states",
-                    affected_elements=[button.text],
-                    recommendation="Add hover and active states to button for user feedback"
-                ))
+        # Note: hover/active state detection would require vision model analysis
+        # Cannot be determined from bbox alone - skipped for now
 
+        # Check for empty inputs without visible labels
         for input_field in inputs:
-            if not input_field.attributes.get("placeholder") and not input_field.text:
+            if not input_field.text:
                 violations.append(HeuristicViolation(
                     heuristic_id="H1",
                     criterion_id="H1.1",
                     severity=SeverityLevel.MINOR,
-                    description=f"Input field lacks placeholder or label for guidance",
-                    affected_elements=[input_field.text],
-                    recommendation="Add placeholder text or label to help users understand input"
+                    description=f"Input field lacks visible label or placeholder",
+                    affected_elements=["input field"],
+                    recommendation="Add placeholder text or label to help users understand input purpose"
                 ))
 
-        if len(buttons) > 0 and not any(b.attributes.get("loading_state") for b in buttons):
-            violations.append(HeuristicViolation(
-                heuristic_id="H1",
-                criterion_id="H1.2",
-                severity=SeverityLevel.MAJOR,
-                description="No loading states detected for action buttons",
-                affected_elements=[b.text for b in buttons],
-                recommendation="Add loading indicators to buttons during async operations"
-            ))
+        # Note: Loading state detection would require temporal analysis or vision model
+        # Cannot be determined from single bbox snapshot - skipped for now
 
         return violations
 
@@ -242,6 +234,11 @@ class HeuristicEvaluationEngine:
         elements: List[UIElement],
         detection_result: UIElementDetectionResult
     ) -> List[HeuristicViolation]:
+        """Evaluate H3: User Control and Freedom.
+        
+        Note: Confirmation dialog detection requires interaction analysis
+        or multi-screen capture, which is beyond bbox scope.
+        """
         violations = []
 
         has_delete_button = any(
@@ -249,23 +246,11 @@ class HeuristicEvaluationEngine:
             for e in elements if e.element_type == "button"
         )
 
-        if has_delete_button:
-            delete_buttons = [
-                e for e in elements
-                if e.element_type == "button" and
-                ("delete" in e.text.lower() or "remove" in e.text.lower())
-            ]
-
-            for btn in delete_buttons:
-                if not btn.attributes.get("confirmation"):
-                    violations.append(HeuristicViolation(
-                        heuristic_id="H3",
-                        criterion_id="H3.3",
-                        severity=SeverityLevel.CRITICAL,
-                        description=f"Delete button '{btn.text}' lacks confirmation dialog",
-                        affected_elements=[btn.text],
-                        recommendation="Add confirmation dialog for destructive actions to prevent accidents"
-                    ))
+        # Note: Confirmation dialog detection would require:
+        # - Multi-screen capture (before/after click)
+        # - Interaction testing
+        # - Vision model to detect modal/dialog
+        # Cannot be determined from single bbox snapshot - check skipped
 
         form_elements = [e for e in elements if e.element_type in ["button", "input", "form"]]
         has_cancel = any(
@@ -303,12 +288,13 @@ class HeuristicEvaluationEngine:
         # H4.1: Check button dimension consistency
         buttons = [e for e in elements if e.element_type == "button"]
         if len(buttons) >= 2:
-            # Group buttons and check dimension consistency
+            # Group buttons and check dimension consistency using bbox
             button_dimensions = []
             for btn in buttons:
-                width = btn.attributes.get("width")
-                height = btn.attributes.get("height")
-                if width and height:
+                # Calculate width and height from bbox
+                width = btn.width
+                height = btn.height
+                if width > 0 and height > 0:
                     button_dimensions.append((btn.text, width, height))
             
             if len(button_dimensions) >= 2:
@@ -331,53 +317,44 @@ class HeuristicEvaluationEngine:
                     ))
         
         # H4.2: Check typography consistency for similar elements
-        headings = [e for e in elements if e.element_type == "heading"]
-        if len(headings) >= 2:
-            font_sizes = []
-            for heading in headings:
-                font_size = heading.attributes.get("font_size")
-                if font_size:
-                    font_sizes.append((heading.text, font_size))
-            
-            if len(font_sizes) >= 2:
-                # Check for inconsistent heading sizes at same level
-                size_set = set(fs[1] for fs in font_sizes)
-                if len(size_set) > 2:  # More than 2 different heading sizes may indicate inconsistency
-                    violations.append(HeuristicViolation(
-                        heuristic_id="H4",
-                        criterion_id="H4.2",
-                        severity=SeverityLevel.MINOR,
-                        description="Multiple heading font sizes detected, may indicate inconsistent typography",
-                        affected_elements=[fs[0] for fs in font_sizes],
-                        recommendation="Establish and follow a consistent typography hierarchy"
-                    ))
+        # Infer heading levels from text elements based on bbox height
+        from app.services.omniparser_client import infer_heading_level
         
-        # H4.3: Check color consistency for buttons
-        button_colors = []
-        for btn in buttons:
-            bg_color = btn.attributes.get("background_color") or btn.attributes.get("bg_color")
-            if bg_color:
-                button_colors.append((btn.text, bg_color))
-        
-        if len(button_colors) >= 2:
-            # Check if similar action buttons have different colors
-            primary_keywords = ["submit", "save", "confirm", "ok", "continue", "next"]
-            primary_buttons = [
-                bc for bc in button_colors 
-                if any(kw in bc[0].lower() for kw in primary_keywords)
-            ]
+        text_elements = [e for e in elements if e.element_type in ["text", "heading"]]
+        if len(text_elements) >= 2:
+            # Group by inferred heading level
+            headings_by_level = {}
+            for elem in text_elements:
+                level = infer_heading_level(elem, text_elements)
+                if level:  # Only consider actual headings
+                    if level not in headings_by_level:
+                        headings_by_level[level] = []
+                    headings_by_level[level].append((elem.text, elem.height))
             
-            if len(primary_buttons) >= 2:
-                unique_colors = set(pb[1] for pb in primary_buttons)
-                if len(unique_colors) > 1:
-                    violations.append(HeuristicViolation(
-                        heuristic_id="H4",
-                        criterion_id="H4.3",
-                        severity=SeverityLevel.MAJOR,
-                        description="Primary action buttons have inconsistent colors",
-                        affected_elements=[pb[0] for pb in primary_buttons],
-                        recommendation="Use consistent colors for primary action buttons across the interface"
-                    ))
+            # Check consistency within each heading level
+            for level, headings in headings_by_level.items():
+                if len(headings) >= 2:
+                    heights = [h[1] for h in headings]
+                    avg_height = sum(heights) / len(heights)
+                    # Check for variance > 15% within same level
+                    inconsistent = [
+                        h[0] for h in headings 
+                        if abs(h[1] - avg_height) > avg_height * 0.15
+                    ]
+                    
+                    if inconsistent:
+                        violations.append(HeuristicViolation(
+                            heuristic_id="H4",
+                            criterion_id="H4.2",
+                            severity=SeverityLevel.MINOR,
+                            description=f"Inconsistent heights for level {level} headings",
+                            affected_elements=inconsistent,
+                            recommendation="Ensure consistent sizing for headings at the same level"
+                        ))
+        
+        # H4.3: Color consistency check removed
+        # Real Omniparser output doesn't include color information
+        # Color analysis would require separate vision model analysis
         
         # H4.4: Check terminology consistency
         button_texts = [btn.text.lower() for btn in buttons]
