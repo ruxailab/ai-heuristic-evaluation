@@ -176,6 +176,9 @@ data/
 *.index
 *.db
 
+# Secrets and credentials
+secrets/
+
 # Test files
 *test*
 test_*
