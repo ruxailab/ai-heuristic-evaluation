@@ -245,7 +245,7 @@ class OmniParserClient:
                     
                     # Get type 
                     cls_id = int(box.cls[0])
-                    raw_type = self.yolo_model.names[cls_id]
+                    raw_type  = self.yolo_model.names[cls_id]
                     mapped_type = self._map_element_type(raw_type)
 
                     # Create Element matching new Omniparser format
