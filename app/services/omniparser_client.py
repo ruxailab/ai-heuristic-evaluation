@@ -5,6 +5,9 @@ from PIL import Image
 import io
 import json
 
+from app.services.exceptions import InvalidInputError, OmniParserError
+from app.core.config import ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES
+
 logger = logging.getLogger(__name__)
 
 class UIElement:
@@ -185,10 +188,59 @@ class OmniParserClient:
         self.model_loaded = True
         self.logger.info("OmniParser client initialized successfully")
 
+    @staticmethod
+    def validate_image(image_data: bytes, content_type: str) -> None:
+        """Validate image data and content type.
+
+        Args:
+            image_data: Raw image bytes
+            content_type: MIME type of the image
+
+        Raises:
+            InvalidInputError: If validation fails
+        """
+        # Validate content type
+        if content_type not in ALLOWED_IMAGE_TYPES:
+            allowed = ", ".join(sorted(ALLOWED_IMAGE_TYPES))
+            raise InvalidInputError(
+                message=f"Unsupported image type: {content_type}",
+                details={
+                    "received": content_type,
+                    "allowed_types": list(ALLOWED_IMAGE_TYPES)
+                }
+            )
+
+        # Validate file size
+        if len(image_data) == 0:
+            raise InvalidInputError(
+                message="Image file is empty",
+                details={"size_bytes": 0}
+            )
+
+        if len(image_data) > MAX_IMAGE_SIZE_BYTES:
+            max_mb = MAX_IMAGE_SIZE_BYTES / (1024 * 1024)
+            raise InvalidInputError(
+                message=f"Image file exceeds maximum size of {max_mb}MB",
+                details={
+                    "max_size_bytes": MAX_IMAGE_SIZE_BYTES,
+                    "received_size_bytes": len(image_data)
+                }
+            )
+
+        # Validate image can be opened
+        try:
+            Image.open(io.BytesIO(image_data))
+        except Exception as e:
+            raise InvalidInputError(
+                message="Invalid image format or corrupted file",
+                details={"error": str(e)}
+            )
+
     async def detect_elements(
         self,
         image_data: bytes,
-        image_url: Optional[str] = None
+        image_url: Optional[str] = None,
+        content_type: str = "image/jpeg"
     ) -> UIElementDetectionResult:
         self.logger.info("Starting UI element detection...")
 
@@ -196,6 +248,9 @@ class OmniParserClient:
             await self.initialize()
 
         try:
+            # Validate image
+            self.validate_image(image_data, content_type)
+
             image = Image.open(io.BytesIO(image_data))
             width, height = image.size
             self.logger.info(f"Processing image: {width}x{height}")
@@ -254,9 +309,15 @@ class OmniParserClient:
             self.logger.info(f"Detection complete: {len(elements)} elements found")
             return result
 
+        except InvalidInputError:
+            # Re-raise validation errors
+            raise
         except Exception as e:
             self.logger.error(f"Error in element detection: {str(e)}")
-            raise
+            raise OmniParserError(
+                message="Failed to detect UI elements",
+                details={"error": str(e)}
+            )
 
     def group_related_elements(self, elements: List[UIElement]) -> Dict[str, List[UIElement]]:
         grouped = {

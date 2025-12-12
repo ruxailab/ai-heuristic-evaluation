@@ -9,6 +9,7 @@ from app.core.constants import NIELSEN_HEURISTICS, HeuristicId, SeverityLevel
 from app.core.config import settings
 from app.services.omniparser_client import UIElementDetectionResult, UIElement
 from app.services.rag_knowledge_base import RAGKnowledgeBase
+from app.services.exceptions import ModelInferenceError, InvalidInputError
 
 logger = logging.getLogger(__name__)
 
@@ -293,7 +294,10 @@ Violations:"""
 
         except Exception as e:
             self.logger.error(f"LLM evaluation failed for {heuristic_id.value}: {e}")
-            return []
+            raise ModelInferenceError(
+                message=f"Failed to evaluate heuristic {heuristic_id.value} using LLM",
+                details={"heuristic_id": heuristic_id.value, "error": str(e)}
+            )
 
     def calculate_score(self, violations: List[HeuristicViolation], heuristic_id: str) -> tuple[int, str]:
         heuristic_def = NIELSEN_HEURISTICS.get(HeuristicId(heuristic_id))
@@ -577,8 +581,8 @@ Violations:"""
             return response.choices[0].message.content.strip() if response.choices else None
 
         except Exception as exc:
-            self.logger.warning(
-                f"LLM explanation failed for {heuristic_id.value}: {exc}. "
-                f"Falling back to empty explanation."
+            self.logger.error(f"LLM explanation failed for {heuristic_id.value}: {exc}")
+            raise ModelInferenceError(
+                message=f"Failed to generate explanation for heuristic {heuristic_id.value}",
+                details={"heuristic_id": heuristic_id.value, "error": str(exc)}
             )
-            return None

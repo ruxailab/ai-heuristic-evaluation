@@ -5,6 +5,8 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import numpy as np
 
+from app.services.exceptions import RAGKnowledgeBaseError
+
 logger = logging.getLogger(__name__)
 
 class RAGKnowledgeBase:

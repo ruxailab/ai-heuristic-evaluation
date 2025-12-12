@@ -175,6 +175,8 @@ logs/
 data/
 *.index
 *.db
+
+# Secrets and credentials
 secrets/
 
 # Test files
@@ -203,4 +205,3 @@ ui-debug.log
 RUXAILAB/node_modules/
 RUXAILAB/dist/
 RUXAILAB/.firebase/
-ai-heuristics-ruxai-firebase-adminsdk-fbsvc-*.json
