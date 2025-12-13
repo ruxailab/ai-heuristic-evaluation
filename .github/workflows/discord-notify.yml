@@ -1,0 +1,19 @@
+name: GitHub to Discord Notification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [ opened ]
+  issues:
+    types: [ opened ]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification to Discord
+        run: |
+          curl -H "Content-Type: application/json" ^
+          -d "{\"content\": \" GitHub event: ${{ github.event_name }} by ${{ github.actor }}\"}" ^
+          ${{ secrets.DISCORD_WEBHOOK_URL }}
