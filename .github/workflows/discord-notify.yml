@@ -14,6 +14,6 @@ jobs:
     steps:
       - name: Send notification to Discord
         run: |
-          curl -H "Content-Type: application/json" ^
-          -d "{\"content\": \" GitHub event: ${{ github.event_name }} by ${{ github.actor }}\"}" ^
-          ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -H "Content-Type: application/json" \
+          -d "{\"content\": \"GitHub event: ${{ github.event_name }} by ${{ github.actor }}\"}" \
+          "${{ secrets.DISCORD_WEBHOOK_URL }}"
