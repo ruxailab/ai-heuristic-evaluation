@@ -1,0 +1,246 @@
+{
+  "metadata": {
+    "screenshot_id": "screenshot_001",
+    "timestamp": "2025-12-09T12:34:56Z",
+    "device": "desktop",
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "omniparser_version": "1.0.0"
+  },
+  "elements": [
+    {
+      "id": "element_001",
+      "type": "heading",
+      "role": "heading",
+      "text": "Create New Account",
+      "bbox": [48, 32, 384, 64],
+      "interactivity": "noninteractive",
+      "visible": true,
+      "hierarchy_level": 1,
+      "attributes": {}
+    },
+    {
+      "id": "element_002",
+      "type": "text",
+      "role": "text",
+      "text": "Enter your email address to get started",
+      "bbox": [48, 80, 512, 104],
+      "interactivity": "noninteractive",
+      "visible": true,
+      "attributes": {}
+    },
+    {
+      "id": "element_003",
+      "type": "input",
+      "role": "textbox",
+      "text": "john.doe@example.com",
+      "bbox": [48, 120, 448, 160],
+      "interactivity": "interactive",
+      "visible": true,
+      "input_type": "email",
+      "placeholder": "Email address",
+      "required": true,
+      "attributes": {
+        "name": "email",
+        "type": "email"
+      }
+    },
+    {
+      "id": "element_004",
+      "type": "input",
+      "role": "textbox",
+      "text": "••••••••••",
+      "bbox": [48, 176, 448, 216],
+      "interactivity": "interactive",
+      "visible": true,
+      "input_type": "password",
+      "placeholder": "Password",
+      "required": true,
+      "attributes": {
+        "name": "password",
+        "type": "password"
+      }
+    },
+    {
+      "id": "element_005",
+      "type": "label",
+      "role": "label",
+      "text": "I agree to the Terms of Service",
+      "bbox": [48, 232, 336, 256],
+      "interactivity": "noninteractive",
+      "visible": true,
+      "attributes": {}
+    },
+    {
+      "id": "element_006",
+      "type": "checkbox",
+      "role": "checkbox",
+      "text": "",
+      "bbox": [30, 232, 50, 252],
+      "interactivity": "interactive",
+      "visible": true,
+      "checked": false,
+      "attributes": {
+        "name": "terms_agreement"
+      }
+    },
+    {
+      "id": "element_007",
+      "type": "button",
+      "role": "button",
+      "text": "Create Account",
+      "bbox": [48, 280, 240, 320],
+      "interactivity": "interactive",
+      "visible": true,
+      "button_type": "submit",
+      "attributes": {
+        "type": "submit",
+        "aria-label": "Create Account Button"
+      }
+    },
+    {
+      "id": "element_008",
+      "type": "button",
+      "role": "button",
+      "text": "Cancel",
+      "bbox": [256, 280, 448, 320],
+      "interactivity": "interactive",
+      "visible": true,
+      "button_type": "reset",
+      "attributes": {
+        "type": "reset",
+        "aria-label": "Cancel Button"
+      }
+    },
+    {
+      "id": "element_009",
+      "type": "link",
+      "role": "link",
+      "text": "Already have an account? Sign in",
+      "bbox": [48, 352, 336, 376],
+      "interactivity": "interactive",
+      "visible": true,
+      "href": "/login",
+      "attributes": {
+        "href": "/login"
+      }
+    },
+    {
+      "id": "element_010",
+      "type": "div",
+      "role": "region",
+      "text": "Security Tips",
+      "bbox": [480, 120, 1120, 360],
+      "interactivity": "noninteractive",
+      "visible": true,
+      "children": [
+        {
+          "id": "element_010_1",
+          "type": "heading",
+          "role": "heading",
+          "text": "Security Tips",
+          "bbox": [480, 120, 720, 152],
+          "interactivity": "noninteractive",
+          "visible": true,
+          "hierarchy_level": 2,
+          "attributes": {}
+        },
+        {
+          "id": "element_010_2",
+          "type": "text",
+          "role": "text",
+          "text": "• Use a strong password with mixed case and numbers",
+          "bbox": [480, 160, 1080, 184],
+          "interactivity": "noninteractive",
+          "visible": true,
+          "attributes": {}
+        },
+        {
+          "id": "element_010_3",
+          "type": "text",
+          "role": "text",
+          "text": "• Enable two-factor authentication for extra security",
+          "bbox": [480, 192, 1080, 216],
+          "interactivity": "noninteractive",
+          "visible": true,
+          "attributes": {}
+        },
+        {
+          "id": "element_010_4",
+          "type": "text",
+          "role": "text",
+          "text": "• Never share your password with anyone",
+          "bbox": [480, 224, 1080, 248],
+          "interactivity": "noninteractive",
+          "visible": true,
+          "attributes": {}
+        }
+      ],
+      "attributes": {}
+    },
+    {
+      "id": "element_011",
+      "type": "icon",
+      "role": "presentation",
+      "text": "checkmark",
+      "bbox": [1152, 160, 1192, 200],
+      "interactivity": "noninteractive",
+      "visible": true,
+      "icon_type": "success",
+      "attributes": {
+        "aria-hidden": "true"
+      }
+    }
+  ],
+  "layout_tree": {
+    "id": "root",
+    "children": [
+      {
+        "id": "element_001",
+        "bbox": [48, 32, 384, 64]
+      },
+      {
+        "id": "element_002",
+        "bbox": [48, 80, 512, 104]
+      },
+      {
+        "id": "element_003",
+        "bbox": [48, 120, 448, 160]
+      },
+      {
+        "id": "element_004",
+        "bbox": [48, 176, 448, 216]
+      },
+      {
+        "id": "element_005",
+        "bbox": [48, 232, 336, 256]
+      },
+      {
+        "id": "element_006",
+        "bbox": [30, 232, 50, 252]
+      },
+      {
+        "id": "element_007",
+        "bbox": [48, 280, 240, 320]
+      },
+      {
+        "id": "element_008",
+        "bbox": [256, 280, 448, 320]
+      },
+      {
+        "id": "element_009",
+        "bbox": [48, 352, 336, 376]
+      },
+      {
+        "id": "element_010",
+        "bbox": [480, 120, 1120, 360]
+      },
+      {
+        "id": "element_011",
+        "bbox": [1152, 160, 1192, 200]
+      }
+    ]
+  }
+}
