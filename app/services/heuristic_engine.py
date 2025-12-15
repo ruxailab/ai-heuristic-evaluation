@@ -163,12 +163,17 @@ class HeuristicEvaluationEngine:
         detection_result: UIElementDetectionResult
     ) -> List[HeuristicViolation]:
         violations = []
+        self.logger.info("H1 evaluation started: checking visibility of system status")
+
 
         buttons = [e for e in elements if e.element_type == "button"]
         inputs = [e for e in elements if e.element_type == "input"]
+        self.logger.debug(f"H1: Found {len(buttons)} buttons and {len(inputs)} input fields")
+
 
         for button in buttons:
             if not button.attributes.get("hover_state") and not button.attributes.get("active_state"):
+                self.logger.info(f"H1 violation detected: button '{button.text}' has no hover/active state")
                 violations.append(HeuristicViolation(
                     heuristic_id="H1",
                     criterion_id="H1.2",
