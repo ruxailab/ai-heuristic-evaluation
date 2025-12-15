@@ -32,6 +32,10 @@ app.include_router(evaluation.router, prefix="/api/v1/evaluation", tags=["evalua
 
 @app.on_event("startup")
 async def startup_event():
+    # Initialize OmniParser Client (Singleton)
+    app.state.omniparser_client = OmniParserClient()
+    await app.state.omniparser_client.initialize()
+    
     setup_logging()
     logger = logging.getLogger(__name__)
     logger.info("AI Heuristic Evaluation API starting up...")

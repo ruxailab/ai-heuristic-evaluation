@@ -231,6 +231,16 @@ Example response format:
 
 Violations:"""
 
+        # Enforce RAG usage if context exists
+        if rag_context:
+            prompt += """
+
+IMPORTANT INSTRUCTION:
+You have access to "Relevant examples and best practices" above (from the RAG Knowledge Base).
+1. If a violation matches a provided example validation, you MUST cite the example source in your 'recommendation'.
+2. Format citations as: "Recommendation text... (Ref: [Source Name/Pattern])"
+"""
+
         try:
             # Call LLM
             response = await self.llm_client.chat.completions.create(
@@ -293,7 +303,7 @@ Violations:"""
 
         except Exception as e:
             self.logger.error(f"LLM evaluation failed for {heuristic_id.value}: {e}")
-            return []
+            raise ValueError(f"AI Service Unavailable: {str(e)}")
 
     def calculate_score(self, violations: List[HeuristicViolation], heuristic_id: str) -> tuple[int, str]:
         heuristic_def = NIELSEN_HEURISTICS.get(HeuristicId(heuristic_id))
@@ -476,7 +486,13 @@ Violations:"""
             HeuristicId.H1_VISIBILITY_OF_SYSTEM_STATUS,
             HeuristicId.H2_MATCH_BETWEEN_SYSTEM_AND_REAL_WORLD,
             HeuristicId.H3_USER_CONTROL_AND_FREEDOM,
-            HeuristicId.H4_CONSISTENCY_AND_STANDARDS
+            HeuristicId.H4_CONSISTENCY_AND_STANDARDS,
+            HeuristicId.H5_ERROR_PREVENTION,
+            HeuristicId.H6_RECOGNITION_RATHER_THAN_RECALL,
+            HeuristicId.H7_FLEXIBILITY_AND_EFFICIENCY_OF_USE,
+            HeuristicId.H8_AESTHETIC_AND_MINIMALIST_DESIGN,
+            HeuristicId.H9_HELP_USERS_RECOGNIZE_RECOVER_FROM_ERRORS,
+            HeuristicId.H10_HELP_AND_DOCUMENTATION
         ]
 
         heuristic_scores = []

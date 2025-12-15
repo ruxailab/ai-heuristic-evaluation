@@ -61,6 +61,55 @@ class RAGKnowledgeBase:
                 "content": "Always provide a clear way to exit or cancel actions. Users should never feel trapped in the interface.",
                 "heuristic_id": "H3",
                 "example": "Multi-step wizard has Back button and Cancel option on all steps"
+            },
+            {
+                "id": "kb_006",
+                "category": "Consistency",
+                "content": "Users should not have to wonder whether different words, situations, or actions mean the same thing. Follow platform conventions.",
+                "heuristic_id": "H4",
+                "example": "Use standard platform icons (e.g., magnifying glass for search) and keep terminology consistent (e.g., don't mix 'Delete' and 'Remove')"
+            },
+            {
+                "id": "kb_007",
+                "category": "Error Prevention",
+                "content": "Prevent errors from occurring in the first place by using constraints and good defaults.",
+                "heuristic_id": "H5",
+                "example": "Date picker disables past dates for flight departure; numeric fields reject alphabetic characters"
+            },
+            {
+                "id": "kb_008",
+                "category": "Recognition over Recall",
+                "content": "Minimize the user's memory load by making objects, actions, and options visible. The user should not have to remember information from one part of the dialogue to another.",
+                "heuristic_id": "H6",
+                "example": "Search bar shows recent searches; Menu items are visible or easily accessible, not hidden deep in sub-menus"
+            },
+            {
+                "id": "kb_009",
+                "category": "Flexibility and Efficiency",
+                "content": "Accelerators — unseen by the novice user — may often speed up the interaction for the expert user.",
+                "heuristic_id": "H7",
+                "example": "Support keyboard shortcuts (Ctrl+S to save) and allow users to customize their dashboard layout"
+            },
+            {
+                "id": "kb_010",
+                "category": "Aesthetic and Minimalist Design",
+                "content": "Dialogues should not contain information which is irrelevant or rarely needed. Every extra unit of information competes with the relevant units.",
+                "heuristic_id": "H8",
+                "example": "Remove rarely used metadata from the main table view; use ample whitespace to group related elements"
+            },
+            {
+                "id": "kb_011",
+                "category": "Error Recovery",
+                "content": "Error messages should be expressed in plain language (no codes), precisely indicate the problem, and constructively suggest a solution.",
+                "heuristic_id": "H9",
+                "example": "Instead of 'Error 503', show 'Connection failed. Please check your internet and Try Again'"
+            },
+            {
+                "id": "kb_012",
+                "category": "Help and Documentation",
+                "content": "Even though it is better if the system can be used without documentation, it may be necessary to provide help and documentation.",
+                "heuristic_id": "H10",
+                "example": "Provide contextual tooltips for complex settings and a searchable Help Center"
             }
         ]
 
