@@ -1,0 +1,14 @@
+{
+    "image_filename": "tests/login_wireframe.png",
+    "expected_elements": [
+        {
+            "type": "button",
+            "text_content": "Sign In"
+        },
+        {
+            "type": "input",
+            "text_content": ""
+        }
+    ],
+    "min_confidence": 0.5
+}

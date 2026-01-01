@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
 from typing import Optional
 from PIL import Image
 import io
@@ -11,12 +11,12 @@ router = APIRouter()
 
 @router.post("/detect-elements")
 async def detect_ui_elements(
+    request: Request,
     image: UploadFile = File(...),
     image_url: Optional[str] = Form(None)
 ):
     try:
-        client = OmniParserClient()
-        await client.initialize()
+        client = request.app.state.omniparser_client
 
         if image:
             contents = await image.read()

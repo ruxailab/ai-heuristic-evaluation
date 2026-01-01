@@ -4,6 +4,27 @@ from typing import List, Dict, Any, Optional, Tuple
 from PIL import Image
 import io
 import json
+from ultralytics import YOLO
+import torch
+from transformers import AutoProcessor, AutoModelForCausalLM
+
+
+
+TYPE_MAPPING = {
+    "clickable_button": "button",
+    "icon_button": "button",
+    "submit_button": "button",
+    "button": "button",
+    "text_input": "input",
+    "input": "input",
+    "search_bar": "input",
+    "heading": "heading",
+    "header": "heading",
+    "title": "heading",
+    "h1": "heading",
+    "h2": "heading",
+    "h3": "heading"
+}
 
 logger = logging.getLogger(__name__)
 
@@ -182,8 +203,23 @@ class OmniParserClient:
 
     async def initialize(self):
         self.logger.info("Initializing OmniParser client...")
+        # Loading YOLO 
+        self.yolo_model = YOLO("weights/icon_detect/best.pt")
+        
+        # Loading Florence-2 
+        self.caption_model = AutoModelForCausalLM.from_pretrained(
+            "weights/icon_caption_florence", 
+            trust_remote_code=True
+        )
+        self.processor = AutoProcessor.from_pretrained(
+            "weights/icon_caption_florence", 
+            trust_remote_code=True
+        )
         self.model_loaded = True
         self.logger.info("OmniParser client initialized successfully")
+
+    def _map_element_type(self, raw_type: str) -> str:
+        return TYPE_MAPPING.get(raw_type.lower(), "unknown")
 
     async def detect_elements(
         self,
@@ -200,47 +236,27 @@ class OmniParserClient:
             width, height = image.size
             self.logger.info(f"Processing image: {width}x{height}")
 
-            # Mock data matching real Omniparser output format
-            # Only fields: type, bbox [x1,y1,x2,y2], interactivity, content
-            elements = [
-                UIElement(
-                    element_type="text",
-                    bbox=[100, 100, 300, 135],  # Large height (35px) = heading
-                    content="Login Form",
-                    interactivity=False
-                ),
-                UIElement(
-                    element_type="input",
-                    bbox=[100, 150, 300, 185],  # height: 35px
-                    content="",
-                    interactivity=True
-                ),
-                UIElement(
-                    element_type="button",
-                    bbox=[100, 200, 220, 240],  # height: 40px
-                    content="Submit",
-                    interactivity=True
-                ),
-                UIElement(
-                    element_type="text",
-                    bbox=[100, 260, 250, 280],  # Small height (20px) = body text/link
-                    content="Forgot Password?",
-                    interactivity=True
-                )
-            ]
+            results = self.yolo_model(image)
+            elements = []
+            for result in results:
+                for box in result.boxes:
+                    # Get coordinates
+                    x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    
+                    # Get type 
+                    cls_id = int(box.cls[0])
+                    raw_type  = self.yolo_model.names[cls_id]
+                    mapped_type = self._map_element_type(raw_type)
 
-            layout_hierarchy = {
-                "root": {
-                    "type": "form",
-                    "children": [
-                        {"type": "heading", "ref": 0},
-                        {"type": "input", "ref": 1},
-                        {"type": "button", "ref": 2},
-                        {"type": "link", "ref": 3}
-                    ]
-                }
-            }
+                    # Create Element matching new Omniparser format
+                    elements.append(UIElement(
+                        element_type=mapped_type,
+                        bbox=[x1, y1, x2, y2],
+                        content="",  # Placeholder for now
+                        interactivity=False # Default to False as we don't infer it yet
+                    ))
 
+            layout_hierarchy = {}
             result = UIElementDetectionResult(
                 elements=elements,
                 layout_hierarchy=layout_hierarchy,
