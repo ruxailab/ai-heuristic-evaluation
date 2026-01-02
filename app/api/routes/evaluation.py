@@ -4,14 +4,7 @@ from typing import Optional, List
 import json
 
 from app.services.heuristic_engine import HeuristicEvaluationEngine
-from app.services.omniparser_client import OmniParserClient
-from app.services.exceptions import (
-    InvalidInputError,
-    OmniParserError,
-    ModelInferenceError,
-    RAGKnowledgeBaseError
-)
-from app.core.config import settings, ALLOWED_IMAGE_TYPES
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -38,37 +31,11 @@ async def evaluate_heuristics(
         500: Unexpected server error
     """
     try:
-        # Validate file exists and has content type
-        if not image:
-            raise InvalidInputError(
-                message="No image file provided",
-                details={"field": "image"}
-            )
-        
-        content_type = image.content_type or "application/octet-stream"
-        
-        # Validate content type early
-        if content_type not in ALLOWED_IMAGE_TYPES:
-            allowed = ", ".join(sorted(ALLOWED_IMAGE_TYPES))
-            raise InvalidInputError(
-                message=f"Unsupported image type: {content_type}. Allowed types: {allowed}",
-                details={
-                    "received": content_type,
-                    "allowed_types": list(ALLOWED_IMAGE_TYPES)
-                }
-            )
-        
-        # Read image data
-        contents = await image.read()
-        
         # Use singleton OmniParser client from app.state (avoids re-initializing model)
         detection_client = request.app.state.omniparser_client
+        contents = await image.read()
         
-        # Pass content_type for validation
-        detection_result = await detection_client.detect_elements(
-            contents,
-            content_type=content_type
-        )
+        detection_result = await detection_client.detect_elements(contents)
 
         # Initialize evaluation engine and evaluate
         evaluation_engine = HeuristicEvaluationEngine()
@@ -86,59 +53,11 @@ async def evaluate_heuristics(
             }
         }
 
-    except InvalidInputError as e:
-        logger.warning(f"Invalid input: {e.message}")
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "Invalid Input",
-                "message": e.message,
-                "details": e.details
-            }
-        )
-    
-    except OmniParserError as e:
-        logger.error(f"OmniParser error: {e.message}")
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "error": "Processing Failed",
-                "message": e.message,
-                "details": e.details
-            }
-        )
-    
-    except ModelInferenceError as e:
-        logger.error(f"Model inference error: {e.message}")
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "error": "Service Unavailable",
-                "message": e.message,
-                "details": e.details
-            }
-        )
-    
-    except RAGKnowledgeBaseError as e:
-        logger.error(f"RAG knowledge base error: {e.message}")
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "error": "Service Unavailable",
-                "message": e.message,
-                "details": e.details
-            }
-        )
-    
     except Exception as e:
-        # Last resort fallback for unexpected errors
-        logger.exception(f"Unexpected error evaluating heuristics: {str(e)}")
+        logger.exception(f"Error evaluating heuristics: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail={
-                "error": "Internal Server Error",
-                "message": "An unexpected error occurred while processing your request"
-            }
+            detail={"error": str(e)}
         )
 
 @router.post("/evaluate-legacy/{heuristic_id}")

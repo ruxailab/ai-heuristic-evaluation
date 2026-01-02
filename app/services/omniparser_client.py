@@ -4,6 +4,27 @@ from typing import List, Dict, Any, Optional, Tuple
 from PIL import Image
 import io
 import json
+from ultralytics import YOLO
+import torch
+from transformers import AutoProcessor, AutoModelForCausalLM
+
+
+
+TYPE_MAPPING = {
+    "clickable_button": "button",
+    "icon_button": "button",
+    "submit_button": "button",
+    "button": "button",
+    "text_input": "input",
+    "input": "input",
+    "search_bar": "input",
+    "heading": "heading",
+    "header": "heading",
+    "title": "heading",
+    "h1": "heading",
+    "h2": "heading",
+    "h3": "heading"
+}
 
 from app.services.exceptions import InvalidInputError, OmniParserError
 from app.core.config import ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES
@@ -186,59 +207,23 @@ class OmniParserClient:
 
     async def initialize(self):
         self.logger.info("Initializing OmniParser client...")
-        # Initialize Florence-2 caption model
-        # In production, this would load the actual model
-        self.caption_model = "florence-2-base"  # Placeholder
+        # Loading YOLO 
+        self.yolo_model = YOLO("weights/icon_detect/best.pt")
+        
+        # Loading Florence-2 
+        self.caption_model = AutoModelForCausalLM.from_pretrained(
+            "weights/icon_caption_florence", 
+            trust_remote_code=True
+        )
+        self.processor = AutoProcessor.from_pretrained(
+            "weights/icon_caption_florence", 
+            trust_remote_code=True
+        )
         self.model_loaded = True
         self.logger.info("OmniParser client initialized successfully")
 
-    @staticmethod
-    def validate_image(image_data: bytes, content_type: str) -> None:
-        """Validate image data and content type.
-
-        Args:
-            image_data: Raw image bytes
-            content_type: MIME type of the image
-
-        Raises:
-            InvalidInputError: If validation fails
-        """
-        # Validate content type
-        if content_type not in ALLOWED_IMAGE_TYPES:
-            allowed = ", ".join(sorted(ALLOWED_IMAGE_TYPES))
-            raise InvalidInputError(
-                message=f"Unsupported image type: {content_type}",
-                details={
-                    "received": content_type,
-                    "allowed_types": list(ALLOWED_IMAGE_TYPES)
-                }
-            )
-
-        # Validate file size
-        if len(image_data) == 0:
-            raise InvalidInputError(
-                message="Image file is empty",
-                details={"size_bytes": 0}
-            )
-
-        if len(image_data) > MAX_IMAGE_SIZE_BYTES:
-            max_mb = MAX_IMAGE_SIZE_BYTES / (1024 * 1024)
-            raise InvalidInputError(
-                message=f"Image file exceeds maximum size of {max_mb}MB",
-                details={
-                    "max_size_bytes": MAX_IMAGE_SIZE_BYTES,
-                    "received_size_bytes": len(image_data)
-                }
-            )
-
-        # Validate image can be opened
-        try:
-            Image.open(io.BytesIO(image_data))
-        except Exception as e:
-            raise InvalidInputError(
-                message="Invalid image format or corrupted file",
-                details={"error": str(e)}
-            )
+    def _map_element_type(self, raw_type: str) -> str:
+        return TYPE_MAPPING.get(raw_type.lower(), "unknown")
 
     async def detect_elements(
         self,
@@ -259,47 +244,27 @@ class OmniParserClient:
             width, height = image.size
             self.logger.info(f"Processing image: {width}x{height}")
 
-            # Mock data matching real Omniparser output format
-            # Only fields: type, bbox [x1,y1,x2,y2], interactivity, content
-            elements = [
-                UIElement(
-                    element_type="text",
-                    bbox=[100, 100, 300, 135],  # Large height (35px) = heading
-                    content="Login Form",
-                    interactivity=False
-                ),
-                UIElement(
-                    element_type="input",
-                    bbox=[100, 150, 300, 185],  # height: 35px
-                    content="",
-                    interactivity=True
-                ),
-                UIElement(
-                    element_type="button",
-                    bbox=[100, 200, 220, 240],  # height: 40px
-                    content="Submit",
-                    interactivity=True
-                ),
-                UIElement(
-                    element_type="text",
-                    bbox=[100, 260, 250, 280],  # Small height (20px) = body text/link
-                    content="Forgot Password?",
-                    interactivity=True
-                )
-            ]
+            results = self.yolo_model(image)
+            elements = []
+            for result in results:
+                for box in result.boxes:
+                    # Get coordinates
+                    x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    
+                    # Get type 
+                    cls_id = int(box.cls[0])
+                    raw_type  = self.yolo_model.names[cls_id]
+                    mapped_type = self._map_element_type(raw_type)
 
-            layout_hierarchy = {
-                "root": {
-                    "type": "form",
-                    "children": [
-                        {"type": "heading", "ref": 0},
-                        {"type": "input", "ref": 1},
-                        {"type": "button", "ref": 2},
-                        {"type": "link", "ref": 3}
-                    ]
-                }
-            }
+                    # Create Element matching new Omniparser format
+                    elements.append(UIElement(
+                        element_type=mapped_type,
+                        bbox=[x1, y1, x2, y2],
+                        content="",  # Placeholder for now
+                        interactivity=False # Default to False as we don't infer it yet
+                    ))
 
+            layout_hierarchy = {}
             result = UIElementDetectionResult(
                 elements=elements,
                 layout_hierarchy=layout_hierarchy,
@@ -322,45 +287,6 @@ class OmniParserClient:
                 message="Failed to detect UI elements",
                 details={"error": str(e)}
             )
-
-    def _map_element_type(self, raw_type: str) -> str:
-        """Map raw element type from Florence-2 to standardized type.
-        
-        Florence-2 may return various type strings that need to be normalized
-        to our standard element types.
-        
-        Args:
-            raw_type: Raw type string from Florence-2
-            
-        Returns:
-            Standardized element type
-        """
-        type_mapping = {
-            "btn": "button",
-            "submit": "button",
-            "reset": "button",
-            "textbox": "input",
-            "textarea": "input",
-            "textfield": "input",
-            "select": "input",
-            "dropdown": "input",
-            "link": "text",
-            "a": "text",
-            "label": "text",
-            "heading": "text",
-            "h1": "text",
-            "h2": "text",
-            "h3": "text",
-            "h4": "text",
-            "h5": "text",
-            "h6": "text",
-            "p": "text",
-            "span": "text",
-            "div": "text"
-        }
-        
-        normalized = raw_type.lower().strip()
-        return type_mapping.get(normalized, normalized)
 
     def group_related_elements(self, elements: List[UIElement]) -> Dict[str, List[UIElement]]:
         grouped = {
