@@ -9,6 +9,7 @@ from app.core.constants import NIELSEN_HEURISTICS, HeuristicId, SeverityLevel
 from app.core.config import settings
 from app.services.omniparser_client import UIElementDetectionResult, UIElement
 from app.services.rag_knowledge_base import RAGKnowledgeBase
+from app.services.exceptions import ModelInferenceError, InvalidInputError
 
 logger = logging.getLogger(__name__)
 
@@ -593,8 +594,8 @@ You have access to "Relevant examples and best practices" above (from the RAG Kn
             return response.choices[0].message.content.strip() if response.choices else None
 
         except Exception as exc:
-            self.logger.warning(
-                f"LLM explanation failed for {heuristic_id.value}: {exc}. "
-                f"Falling back to empty explanation."
+            self.logger.error(f"LLM explanation failed for {heuristic_id.value}: {exc}")
+            raise ModelInferenceError(
+                message=f"Failed to generate explanation for heuristic {heuristic_id.value}",
+                details={"heuristic_id": heuristic_id.value, "error": str(exc)}
             )
-            return None

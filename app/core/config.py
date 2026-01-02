@@ -1,7 +1,18 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field
-from typing import Optional
+from typing import Optional, Set
 import os
+
+# Allowed image content types for the /evaluate endpoint
+ALLOWED_IMAGE_TYPES: Set[str] = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+}
+
+# Maximum file size for image uploads (in bytes)
+MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
 
 class Settings(BaseSettings):
     OPENAI_API_KEY: str = Field(default="", env="OPENAI_API_KEY")

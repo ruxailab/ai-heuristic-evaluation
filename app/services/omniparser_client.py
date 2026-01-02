@@ -26,6 +26,9 @@ TYPE_MAPPING = {
     "h3": "heading"
 }
 
+from app.services.exceptions import InvalidInputError, OmniParserError
+from app.core.config import ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES
+
 logger = logging.getLogger(__name__)
 
 class UIElement:
@@ -200,6 +203,7 @@ class OmniParserClient:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.model_loaded = False
+        self.caption_model = None  # Florence-2 model for captioning
 
     async def initialize(self):
         self.logger.info("Initializing OmniParser client...")
@@ -224,7 +228,8 @@ class OmniParserClient:
     async def detect_elements(
         self,
         image_data: bytes,
-        image_url: Optional[str] = None
+        image_url: Optional[str] = None,
+        content_type: str = "image/jpeg"
     ) -> UIElementDetectionResult:
         self.logger.info("Starting UI element detection...")
 
@@ -232,6 +237,9 @@ class OmniParserClient:
             await self.initialize()
 
         try:
+            # Validate image
+            self.validate_image(image_data, content_type)
+
             image = Image.open(io.BytesIO(image_data))
             width, height = image.size
             self.logger.info(f"Processing image: {width}x{height}")
@@ -270,9 +278,15 @@ class OmniParserClient:
             self.logger.info(f"Detection complete: {len(elements)} elements found")
             return result
 
+        except InvalidInputError:
+            # Re-raise validation errors
+            raise
         except Exception as e:
             self.logger.error(f"Error in element detection: {str(e)}")
-            raise
+            raise OmniParserError(
+                message="Failed to detect UI elements",
+                details={"error": str(e)}
+            )
 
     def group_related_elements(self, elements: List[UIElement]) -> Dict[str, List[UIElement]]:
         grouped = {

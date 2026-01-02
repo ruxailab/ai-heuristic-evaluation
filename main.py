@@ -40,6 +40,11 @@ async def startup_event():
     logger = logging.getLogger(__name__)
     logger.info("AI Heuristic Evaluation API starting up...")
 
+    # Initialize singleton OmniParser client to avoid re-initializing model on every request
+    app.state.omniparser_client = OmniParserClient()
+    await app.state.omniparser_client.initialize()
+    logger.info("OmniParser client initialized (singleton)")
+
     heuristic_engine = HeuristicEvaluationEngine()
     await heuristic_engine.initialize()
 
