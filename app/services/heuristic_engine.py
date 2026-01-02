@@ -304,7 +304,10 @@ You have access to "Relevant examples and best practices" above (from the RAG Kn
 
         except Exception as e:
             self.logger.error(f"LLM evaluation failed for {heuristic_id.value}: {e}")
-            raise ValueError(f"AI Service Unavailable: {str(e)}")
+            raise ModelInferenceError(
+                message=f"Failed to evaluate {heuristic_id.value} with LLM",
+                details={"heuristic_id": heuristic_id.value, "error": str(e)}
+            )
 
     def calculate_score(self, violations: List[HeuristicViolation], heuristic_id: str) -> tuple[int, str]:
         heuristic_def = NIELSEN_HEURISTICS.get(HeuristicId(heuristic_id))

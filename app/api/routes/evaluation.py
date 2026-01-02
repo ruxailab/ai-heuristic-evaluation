@@ -5,6 +5,12 @@ import json
 
 from app.services.heuristic_engine import HeuristicEvaluationEngine
 from app.core.config import settings
+from app.services.exceptions import (
+    InvalidInputError,
+    OmniParserError,
+    ModelInferenceError,
+    RAGKnowledgeBaseError
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

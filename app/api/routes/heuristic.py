@@ -5,6 +5,7 @@ from PIL import Image
 import io
 
 from app.services.omniparser_client import OmniParserClient, UIElementDetectionResult
+from app.services.exceptions import InvalidInputError, OmniParserError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -31,9 +32,37 @@ async def detect_ui_elements(
             "data": result.to_dict()
         }
 
+    except InvalidInputError as e:
+        logger.warning(f"Invalid input: {e.message}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "Invalid Input",
+                "message": e.message,
+                "details": e.details
+            }
+        )
+    
+    except OmniParserError as e:
+        logger.error(f"OmniParser error: {e.message}")
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "Unprocessable Entity",
+                "message": e.message,
+                "details": e.details
+            }
+        )
+
     except Exception as e:
-        logger.error(f"Error detecting UI elements: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "Internal Server Error",
+                "message": "An unexpected error occurred"
+            }
+        )
 
 @router.post("/analyze")
 async def analyze_interface(
